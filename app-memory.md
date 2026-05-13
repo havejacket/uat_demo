@@ -84,3 +84,4 @@ Accumulated knowledge from UAT sessions. Append and refine — do not rewrite fr
 - 2026-05-12 (run 1): edit-foods UAT — all 7 scenarios passed
 - 2026-05-12 (run 2): edit-foods UAT re-run — all 7 scenarios passed; "Protein Yogurt" deleted as test artefact (DB now has 18 foods); browser lock required `pkill -f mcp-chrome` to recover stale session
 - 2026-05-12 (run 3): edit-foods UAT re-run — all 7 scenarios passed; "Yogurt (pot) UAT Delete Me" deleted as test artefact (DB now has 17 foods)
+- 2026-05-13 (run 4): edit-foods UAT re-run — all 7 scenarios passed; "Strawberry Strained Yogurt UAT Delete Me" deleted as test artefact (DB now has 16 foods)
