@@ -4,4 +4,6 @@ playwright-report/
 test-results/
 .playwright-mcp/
 requirements/
+app-config.md
+app-memory.md
 .claude/worktrees/
