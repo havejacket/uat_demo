@@ -1,7 +1,5 @@
-node_modules/
+.DS_Store
 .env.local
-playwright-report/
-test-results/
 .playwright-mcp/
 requirements/
 app-config.md
