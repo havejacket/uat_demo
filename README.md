@@ -1,20 +1,26 @@
 # UAT with Claude + Playwright MCP
 
+> **This is a proof of concept.** It demonstrates the human-in-the-loop approach to AI-assisted UAT. The CI/CD integration shown below is an aspirational goal — not implemented here.
+
 A lightweight approach to user acceptance testing using Claude as the tester and Playwright MCP as the browser. Claude navigates a live app, works through test scenarios, and produces a pass/fail report with screenshot evidence. No spec files or test framework required.
 
 ---
 
 ## How it works
 
-### Human-in-the-loop (interactive) mode
+### This POC: human-in-the-loop mode
 
-Claude runs inside your IDE. You review the test plan before any testing starts, watch the report update live as each scenario completes, and can intervene at any point.
+Claude runs inside your IDE. You provide the BRD, review the generated test plan before any testing starts, then watch the report update live as each scenario completes. You can intervene at any point.
+
+**This is what the repo implements.** Follow the setup steps below to get it working.
 
 ![UAT workflow — Claude + Playwright MCP](UAT%20workflow.png)
 
-### CI/CD mode
+### Aspirational goal: CI/CD integration
 
-The same UAT loop runs automatically after every deploy to staging. Claude reads the BRD and approved test plan, drives the app via Playwright MCP, and either approves the release or captures evidence and files a defect for engineering.
+The same UAT loop could run automatically after every deploy to staging. Claude reads the BRD and approved test plan, drives the app via Playwright MCP, and either approves the release or captures evidence and files a defect for engineering.
+
+**This is not implemented in this repo** — it's the direction this approach is heading.
 
 ![UAT in the CI/CD loop](UAT%20with%20CICD.png)
 
