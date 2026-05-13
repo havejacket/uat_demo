@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude + Playwright MCP — UAT Workflow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Instrument+Serif&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #fafafa;
+      min-height: 100vh;
+      color: #111;
+    }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* Header */
+    .header {
+      background: #0f0f0f;
+      padding: 28px 32px 24px;
+      color: #fff;
+    }
+    .header-inner {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      max-width: 680px;
+    }
+    .header-eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: #666;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .header h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: 30px;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .header-sub {
+      font-size: 14px;
+      color: #888;
+      line-height: 1.55;
+      max-width: 440px;
+    }
+    .header-tags {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      align-items: flex-end;
+    }
+    .header-tag {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: #888;
+    }
+    .header-tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Content wrapper */
+    .content {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 28px 24px 48px;
+    }
+
+    /* Phase section */
+    .phase-block { margin-bottom: 32px; }
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .phase-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .phase-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .phase-rule {
+      flex: 1;
+      height: 1px;
+      background: #ebebeb;
+    }
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Step card */
+    .step-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #fff;
+      border: 1px solid #ebebeb;
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: left;
+      width: 100%;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .step-card:hover {
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
+    }
+    .step-num-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-card-body { flex: 1; }
+    .step-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #111;
+      margin-bottom: 2px;
+    }
+    .step-card-sub {
+      font-size: 13px;
+      color: #888;
+    }
+    .step-warn-icon { font-size: 16px; flex-shrink: 0; }
+    .step-arrow { color: #ccc; font-size: 20px; flex-shrink: 0; line-height: 1; }
+
+    /* Footer note */
+    .footer-note {
+      margin-top: 8px;
+      padding: 14px 16px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+    .footer-note strong { color: #333; }
+
+    /* Detail view */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 13px;
+      padding: 0 0 1.5rem;
+      font-family: inherit;
+    }
+    .back-btn:hover { color: #333; }
+    .detail-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .detail-step-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+    .phase-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .detail-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 26px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: #0f0f0f;
+      margin-bottom: 6px;
+    }
+    .detail-sub {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+    .detail-desc {
+      font-size: 15px;
+      line-height: 1.75;
+      color: #333;
+      margin-bottom: 24px;
+    }
+    .warn-box {
+      background: #fffbeb;
+      border: 1px solid #f5c842;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #7a5c00;
+      line-height: 1.6;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 10px;
+    }
+    .bullets-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #aaa;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .bullets-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 24px;
+    }
+    .bullets-list li {
+      display: flex;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 14px;
+      color: #333;
+      line-height: 1.5;
+    }
+    .bullets-list li:last-child { border-bottom: none; }
+    .bullet-arrow { font-size: 18px; line-height: 1; margin-top: 1px; flex-shrink: 0; }
+    .files-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #aaa;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .files-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 28px;
+    }
+    .file-pill {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: #f5f5f5;
+      color: #444;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #e8e8e8;
+    }
+    .nav-row {
+      display: flex;
+      gap: 10px;
+      border-top: 1px solid #f0f0f0;
+      padding-top: 20px;
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid #e8e8e8;
+      background: #fff;
+      font-size: 13px;
+      color: #555;
+      font-family: inherit;
+      text-align: left;
+    }
+    .nav-btn:hover { background: #f9f9f9; }
+    .nav-btn-label {
+      font-size: 11px;
+      color: #aaa;
+      margin-bottom: 2px;
+    }
+    .nav-btn-title { font-weight: 500; }
+    .nav-btn-next {
+      text-align: right;
+    }
+
+    /* Hidden */
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-inner">
+      <div>
+        <div class="header-eyebrow">Claude + Playwright MCP</div>
+        <h1>User Acceptance Testing</h1>
+        <p class="header-sub">Claude navigates a live app via Playwright MCP, validates business requirements against the BRD, and produces a pass/fail report with screenshot evidence.</p>
+      </div>
+      <div class="header-tags">
+        <div class="header-tag"><span class="header-tag-dot" style="background:#1a6cf6"></span>Business gate, not a test suite</div>
+        <div class="header-tag"><span class="header-tag-dot" style="background:#c27d0e"></span>Live app — real shared data</div>
+        <div class="header-tag"><span class="header-tag-dot" style="background:#1a8c4e"></span>No spec files required</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overview -->
+  <div class="content" id="overview-view">
+    <div id="phases-container"></div>
+    <div class="footer-note">
+      <strong>Not a regression suite.</strong> UAT is a business gate — it validates the BRD was fulfilled from a product perspective. Unit, integration, and regression testing are separate engineering concerns.
+    </div>
+  </div>
+
+  <!-- Detail -->
+  <div class="content hidden" id="detail-view">
+    <button class="back-btn" onclick="showOverview()">← All steps</button>
+    <div id="detail-content"></div>
+  </div>
+
+  <script>
+    const PHASES = [
+      {
+        id: "setup", label: "Setup", color: "#1a6cf6", bg: "#e8f0ff",
+        steps: [
+          {
+            num: "01", title: "Load context", sub: "Read app-config.md + app-memory.md",
+            detail: "Before interacting with the app, Claude reads two files: app-config.md (URL, credentials, login flow) and app-memory.md (accumulated knowledge from prior sessions). This prevents repeating discoveries already made and avoids known fragile areas.",
+            bullets: [
+              "app-config.md is human-maintained — do not edit it",
+              "app-memory.md is Claude-maintained — append after every session",
+              "Login flow and auth behaviour are session-critical",
+              "Known selector quirks and navigation structure live here",
+            ],
+            warn: null,
+            files: ["app-config.md", "app-memory.md"],
+          },
+          {
+            num: "02", title: "Read the BRD", sub: "Business requirements are the source of truth",
+            detail: "The BRD is the definitive statement of what the feature must do. Every pass/fail decision is made against the BRD — not against implementation details, technical assumptions, or the test plan in isolation.",
+            bullets: [
+              "Located at requirements/[feature]/brd.md",
+              "Human-authored — not generated by Claude",
+              "Is the contract being verified, not a spec being tested",
+            ],
+            warn: null,
+            files: ["requirements/[feature]/brd.md"],
+          },
+        ],
+      },
+      {
+        id: "plan", label: "Plan", color: "#c27d0e", bg: "#fff5e0",
+        steps: [
+          {
+            num: "03", title: "Generate test plan", sub: "Derive scenarios from BRD — human approval required",
+            detail: "Claude derives test scenarios directly from the BRD. Each scenario maps to one or more business requirements. The test plan must be reviewed and explicitly approved by a human before any testing begins. This is a deliberate gate — not optional.",
+            bullets: [
+              "Saved to requirements/[feature]/test-plan.md",
+              "Human approval is mandatory — do not proceed without it",
+              "Scenarios describe user journeys, not technical interactions",
+            ],
+            warn: "If test-plan.md already exists, confirm it is still current before running. Requirements can drift.",
+            files: ["requirements/[feature]/test-plan.md"],
+          },
+          {
+            num: "04", title: "Pre-create report", sub: "All scenarios listed as PENDING before testing starts",
+            detail: "Before executing any test, Claude creates the dated results folder and report.md with every scenario listed as PENDING. This gives a clear at-a-glance view of progress during the session and ensures no scenario is silently skipped.",
+            bullets: [
+              "Folder: requirements/[feature]/results/[YYYY-MM-DD HH:mm]/",
+              "report.md is created now, updated live — not at the end",
+              "All scenarios start as ⏳ PENDING before any navigation occurs",
+            ],
+            warn: null,
+            files: ["requirements/[feature]/results/[date]/report.md"],
+          },
+        ],
+      },
+      {
+        id: "execute", label: "Execute", color: "#1a8c4e", bg: "#e6f7ee",
+        steps: [
+          {
+            num: "05", title: "Run each scenario", sub: "Claude navigates the live app via Playwright MCP",
+            detail: "Claude uses Playwright MCP to navigate and interact with the live application. DOM snapshots are used for navigation and interaction. Screenshots capture the key decision moment of each scenario — not a general audit trail.",
+            bullets: [
+              "Use browser_snapshot (DOM) for navigation — not screenshots",
+              "One key-moment screenshot per scenario: tc-[nn]-[description].png",
+              "On failure: additional screenshot tc-[nn]-[description]-fail.png",
+              "Destructive ops: rename item (append 'UAT Delete Me') before deleting",
+            ],
+            warn: "Live shared database — edits, creates, and deletes are permanent and affect all users.",
+            files: ["tc-[nn]-[description].png", "tc-[nn]-[description]-fail.png"],
+          },
+          {
+            num: "06", title: "Update report live", sub: "PENDING → PASS or FAIL after every scenario",
+            detail: "Immediately after each scenario completes, report.md is updated. PENDING becomes ✅ PASS or ❌ FAIL with observations and inline screenshot evidence. Do not batch updates at the end of the session — update after every single scenario.",
+            bullets: [
+              "PASS: brief observation of what was confirmed against the BRD",
+              "FAIL: specific observation of what diverged from the BRD",
+              "Screenshot reference added inline under each scenario heading",
+              "Fail screenshot goes on the line directly below the pass screenshot",
+            ],
+            warn: null,
+            files: ["requirements/[feature]/results/[date]/report.md"],
+          },
+        ],
+      },
+      {
+        id: "close", label: "Close", color: "#6d3fbc", bg: "#f0ebff",
+        steps: [
+          {
+            num: "07", title: "Finalise report", sub: "Summary + observations — readable without technical context",
+            detail: "Once all scenarios are complete, Claude adds a summary line and any cross-scenario observations. The report is the deliverable — readable by a product owner without technical context. It is the evidence the BRD has or has not been fulfilled.",
+            bullets: [
+              "Summary: total PASS, FAIL, and any scenarios not reached",
+              "Overall observations: patterns, systemic issues, data dependencies",
+              "The report is the product owner's acceptance evidence",
+              "Do not alter scenario-level results retroactively",
+            ],
+            warn: null,
+            files: ["requirements/[feature]/results/[date]/report.md"],
+          },
+          {
+            num: "08", title: "Kill browser process", sub: "Mandatory — prevents lock on next session",
+            detail: "At the end of every session, kill the Playwright MCP Chrome process. The MCP server holds a Chrome profile lock. Skipping this step causes 'Browser is already in use' errors at the start of the next session — every tool call will fail silently.",
+            bullets: [
+              "Run: pkill -f 'mcp-chrome'",
+              "Wait one second, then verify the first tool call in the next session works",
+              "Also run at session start if the browser is already locked",
+              "Profile lock lives in Playwright cache as mcp-chrome-*",
+            ],
+            warn: "This step is mandatory. An unreleased browser lock will block every tool call in the next session.",
+            files: [],
+          },
+          {
+            num: "09", title: "Update app memory", sub: "Append learnings — never rewrite from scratch",
+            detail: "After every session, Claude appends new learnings to app-memory.md. This is the compounding value of the UAT approach — each session makes the next one faster and more reliable. Append and refine only; never overwrite.",
+            bullets: [
+              "Navigation structure changes or newly discovered quirks",
+              "Auth and timing behaviour observed during the session",
+              "Reliable selectors and fragile areas identified",
+              "Data conditions that affected test outcomes",
+            ],
+            warn: null,
+            files: ["app-memory.md"],
+          },
+        ],
+      },
+    ];
+
+    const ALL_STEPS = PHASES.flatMap(p => p.steps.map(s => ({ ...s, phase: p })));
+
+    // Build overview
+    const container = document.getElementById('phases-container');
+    PHASES.forEach(phase => {
+      const block = document.createElement('div');
+      block.className = 'phase-block';
+      block.innerHTML = `
+        <div class="phase-header">
+          <div class="phase-dot" style="background:${phase.color}"></div>
+          <div class="phase-label" style="color:${phase.color}">Phase — ${phase.label}</div>
+          <div class="phase-rule"></div>
+        </div>
+        <div class="steps-list" id="steps-${phase.id}"></div>
+      `;
+      container.appendChild(block);
+
+      const stepsList = block.querySelector(`#steps-${phase.id}`);
+      phase.steps.forEach(step => {
+        const globalIdx = ALL_STEPS.findIndex(s => s.num === step.num);
+        const card = document.createElement('button');
+        card.className = 'step-card';
+        card.innerHTML = `
+          <div class="step-num-badge" style="color:${phase.color};background:${phase.bg}">${step.num}</div>
+          <div class="step-card-body">
+            <div class="step-card-title">${step.title}</div>
+            <div class="step-card-sub">${step.sub}</div>
+          </div>
+          ${step.warn ? '<div class="step-warn-icon">⚠</div>' : ''}
+          <div class="step-arrow">›</div>
+        `;
+        card.addEventListener('mouseenter', () => {
+          card.style.borderColor = phase.color + '55';
+          card.style.boxShadow = `0 0 0 3px ${phase.color}11`;
+        });
+        card.addEventListener('mouseleave', () => {
+          card.style.borderColor = '#ebebeb';
+          card.style.boxShadow = 'none';
+        });
+        card.addEventListener('click', () => showDetail(globalIdx));
+        stepsList.appendChild(card);
+      });
+    });
+
+    function showDetail(idx) {
+      const step = ALL_STEPS[idx];
+      const phase = step.phase;
+      const prev = idx > 0 ? ALL_STEPS[idx - 1] : null;
+      const next = idx < ALL_STEPS.length - 1 ? ALL_STEPS[idx + 1] : null;
+
+      let html = `
+        <div class="detail-meta">
+          <div class="detail-step-badge" style="background:${phase.bg};color:${phase.color}">STEP ${step.num}</div>
+          <div class="phase-pill" style="background:${phase.bg};color:${phase.color}">${phase.label}</div>
+        </div>
+        <div class="detail-title">${step.title}</div>
+        <div class="detail-sub">${step.sub}</div>
+        <div class="detail-desc">${step.detail}</div>
+      `;
+
+      if (step.warn) {
+        html += `
+          <div class="warn-box">
+            <span>⚠</span>
+            <span>${step.warn}</span>
+          </div>
+        `;
+      }
+
+      html += `<div class="bullets-label">What happens here</div><ul class="bullets-list">`;
+      step.bullets.forEach(b => {
+        html += `<li><span class="bullet-arrow" style="color:${phase.color}">›</span>${b}</li>`;
+      });
+      html += `</ul>`;
+
+      if (step.files.length > 0) {
+        html += `<div class="files-label">Files involved</div><div class="files-list">`;
+        step.files.forEach(f => {
+          html += `<span class="file-pill">${f}</span>`;
+        });
+        html += `</div>`;
+      }
+
+      html += `<div class="nav-row">`;
+      if (prev) {
+        html += `
+          <button class="nav-btn" onclick="showDetail(${idx - 1})">
+            <div class="nav-btn-label">← Previous</div>
+            <div class="nav-btn-title">${prev.title}</div>
+          </button>
+        `;
+      }
+      if (next) {
+        html += `
+          <button class="nav-btn nav-btn-next" onclick="showDetail(${idx + 1})"
+            style="border-color:${next.phase.color}33;background:${next.phase.bg};color:${next.phase.color}">
+            <div class="nav-btn-label" style="opacity:0.7">Next →</div>
+            <div class="nav-btn-title">${next.title}</div>
+          </button>
+        `;
+      }
+      html += `</div>`;
+
+      document.getElementById('detail-content').innerHTML = html;
+      document.getElementById('overview-view').classList.add('hidden');
+      document.getElementById('detail-view').classList.remove('hidden');
+      window.scrollTo(0, 0);
+    }
+
+    function showOverview() {
+      document.getElementById('detail-view').classList.add('hidden');
+      document.getElementById('overview-view').classList.remove('hidden');
+      window.scrollTo(0, 0);
+    }
+  </script>
+</body>
+</html>

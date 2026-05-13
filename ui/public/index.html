@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UAT Console</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0d0d18;
+  --sidebar:  #13131f;
+  --surface:  #1c1c2e;
+  --surface2: #26263a;
+  --border:   #2e2e45;
+  --text:     #e2e2f0;
+  --muted:    #7070a0;
+  --accent:   #7c5af6;
+  --accent-h: #9b7dff;
+  --green:    #3dd68c;
+  --red:      #f07070;
+  --yellow:   #f0b840;
+  --sidebar-w: 230px;
+}
+
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+/* ── Layout ── */
+.layout { display: flex; height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w); min-width: var(--sidebar-w);
+  background: var(--sidebar); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+.logo span { color: var(--accent); }
+
+.sidebar-nav { padding: 8px 8px 0; }
+
+.nav-item {
+  display: block; padding: 7px 10px; border-radius: 6px;
+  color: var(--muted); text-decoration: none; font-size: 13.5px;
+  cursor: pointer; transition: background 0.1s, color 0.1s;
+  user-select: none;
+}
+.nav-item:hover { background: var(--surface); color: var(--text); }
+.nav-item.active { background: var(--surface2); color: var(--text); }
+
+.sidebar-section {
+  padding: 16px 18px 6px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+  color: var(--muted); text-transform: uppercase;
+}
+
+.sidebar-features { flex: 1; overflow-y: auto; padding: 0 8px 8px; }
+
+.sidebar-feat {
+  display: block; padding: 7px 10px; border-radius: 6px;
+  color: var(--muted); font-size: 13.5px; cursor: pointer;
+  transition: background 0.1s, color 0.1s; user-select: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar-feat:hover { background: var(--surface); color: var(--text); }
+.sidebar-feat.active { background: var(--surface2); color: var(--text); }
+
+.sidebar-footer {
+  padding: 10px 8px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.main {
+  flex: 1; overflow-y: auto; background: var(--bg);
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 6px; font-size: 13.5px;
+  font-weight: 500; cursor: pointer; border: none; transition: opacity 0.1s;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--surface2); color: var(--text); }
+.btn-ghost {
+  background: none; color: var(--muted); width: 100%;
+  padding: 7px 10px; border-radius: 6px; font-size: 13px;
+  cursor: pointer; border: none; text-align: left;
+  transition: background 0.1s, color 0.1s;
+}
+.btn-ghost:hover { background: var(--surface); color: var(--text); }
+.btn-danger { background: #5a1a1a; color: var(--red); }
+
+/* ── Page ── */
+.page { padding: 32px 36px; max-width: 900px; }
+.page-header { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+.page-header h1 { font-size: 20px; font-weight: 600; }
+.back-btn {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 20px; line-height: 1; padding: 0 4px;
+  transition: color 0.1s;
+}
+.back-btn:hover { color: var(--text); }
+
+/* ── Cards ── */
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+
+.feature-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 18px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.feature-card:hover { border-color: var(--accent); background: var(--surface2); }
+
+.feature-card-name { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.feature-card-run { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+.feature-card-empty { font-size: 12.5px; color: var(--muted); }
+
+/* ── Badges ── */
+.badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 20px;
+}
+.badge-pass    { background: #1a3d2a; color: var(--green); }
+.badge-fail    { background: #3d1a1a; color: var(--red); }
+.badge-pending { background: #3d2e0a; color: var(--yellow); }
+
+/* ── Config / BRD editor ── */
+.editor-wrap { display: flex; flex-direction: column; gap: 12px; }
+.editor-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+textarea.code {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px; line-height: 1.6; padding: 14px; resize: vertical;
+  width: 100%; min-height: 320px; outline: none;
+  transition: border-color 0.15s;
+}
+textarea.code:focus { border-color: var(--accent); }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.tab {
+  padding: 8px 16px; font-size: 13.5px; cursor: pointer; border: none;
+  background: none; color: var(--muted); border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: color 0.15s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 500; }
+
+/* ── Runs list ── */
+.runs-list { display: flex; flex-direction: column; gap: 8px; }
+.run-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 16px; cursor: pointer; transition: border-color 0.15s;
+}
+.run-item:hover { border-color: var(--accent); }
+.run-name { font-size: 13px; font-family: 'SF Mono', monospace; color: var(--muted); }
+.run-arrow { color: var(--muted); }
+
+/* ── Markdown output ── */
+.report-body {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 28px 32px; line-height: 1.7;
+}
+.report-body h1 { font-size: 20px; margin-bottom: 16px; }
+.report-body h2 { font-size: 16px; margin: 24px 0 12px; color: var(--accent-h); }
+.report-body h3 { font-size: 14px; margin: 20px 0 8px; color: var(--muted); }
+.report-body p  { margin-bottom: 12px; font-size: 14px; }
+.report-body table { border-collapse: collapse; width: 100%; margin-bottom: 16px; font-size: 13.5px; }
+.report-body th, .report-body td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+.report-body th { background: var(--surface2); font-weight: 600; }
+.report-body img { max-width: 100%; border-radius: 6px; margin: 12px 0; border: 1px solid var(--border); }
+.report-body code { background: var(--surface2); padding: 2px 6px; border-radius: 4px; font-size: 12.5px; font-family: monospace; }
+.report-body hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+/* ── Terminal ── */
+.terminal-wrap { display: flex; flex-direction: column; height: calc(100vh - 100px); }
+.terminal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; background: var(--surface);
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.terminal-title { font-size: 14px; font-weight: 600; }
+.terminal-timer { font-size: 13px; font-family: monospace; color: var(--muted); }
+.terminal-body {
+  flex: 1; overflow-y: auto; background: #0a0a12;
+  padding: 16px 20px; font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12.5px; line-height: 1.6; color: #c0c0e0;
+  white-space: pre-wrap; word-break: break-word;
+}
+.terminal-body .cmd { color: var(--muted); }
+.terminal-footer {
+  padding: 12px 20px; background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+.status-running { background: var(--yellow); animation: pulse 1s infinite; }
+.status-success { background: var(--green); }
+.status-error   { background: var(--red); }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.modal-overlay.hidden { display: none; }
+.modal-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  width: 540px; max-width: calc(100vw - 40px); display: flex; flex-direction: column;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px; border-bottom: 1px solid var(--border);
+}
+.modal-header h3 { font-size: 15px; font-weight: 600; }
+.modal-close {
+  background: none; border: none; color: var(--muted); font-size: 20px;
+  cursor: pointer; line-height: 1;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.modal-footer {
+  padding: 14px 20px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+input[type=text] {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 13.5px; padding: 8px 12px; width: 100%; outline: none;
+}
+input[type=text]:focus { border-color: var(--accent); }
+.modal-body textarea.code { min-height: 200px; }
+
+/* ── Empty / misc ── */
+.empty { color: var(--muted); font-size: 14px; padding: 40px 0; }
+.notice {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 16px; font-size: 13px; color: var(--muted); margin-bottom: 20px;
+}
+.notice strong { color: var(--text); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">UAT <span>Console</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item" id="nav-dashboard">Dashboard</a>
+      <a class="nav-item" id="nav-config">App Config</a>
+    </nav>
+    <div class="sidebar-section">Requirements</div>
+    <div class="sidebar-features" id="sidebar-features"></div>
+    <div class="sidebar-footer">
+      <button class="btn-ghost" id="new-req-btn">＋ New Requirement</button>
+    </div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<div id="modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>New Requirement</h3>
+      <button class="modal-close" id="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <label>Feature slug <span style="color:var(--muted);font-weight:400;text-transform:none">(lowercase, hyphens only)</span></label>
+      <input id="new-name" type="text" placeholder="e.g. user-login" />
+      <label>Business Requirements</label>
+      <textarea id="new-brd" class="code" placeholder="Describe what the feature should do..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="modal-create">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+const S = {
+  view: 'dashboard',
+  features: [],
+  feature: null,       // current feature name
+  featureData: null,   // { brd, testPlan, runs }
+  tab: 'brd',
+  reportHtml: null,
+  run: null,
+  runStatus: 'idle',   // idle | running | success | error
+  runAction: null,     // 'plan' | 'run'
+  timerStart: null,
+  timerInterval: null,
+};
+
+// ── API ────────────────────────────────────────────────────────────────────────
+const api = {
+  get:  (url)       => fetch(url).then(r => r.json()),
+  put:  (url, body) => fetch(url, { method: 'PUT',  headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
+  post: (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()),
+};
+
+// ── Navigation ─────────────────────────────────────────────────────────────────
+async function go(view, params = {}) {
+  Object.assign(S, params, { view });
+
+  if (view === 'feature' && S.feature) {
+    S.featureData = await api.get(`/api/features/${S.feature}`);
+    if (!['brd','plan','runs'].includes(S.tab)) S.tab = 'brd';
+  }
+  if (view === 'report' && S.feature && S.run) {
+    const d = await api.get(`/api/features/${S.feature}/reports/${encodeURIComponent(S.run)}`);
+    S.reportHtml = d.html;
+  }
+
+  S.features = await api.get('/api/features');
+  render();
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────────
+function render() {
+  // Sidebar active state
+  document.getElementById('nav-dashboard').classList.toggle('active', S.view === 'dashboard');
+  document.getElementById('nav-config').classList.toggle('active', S.view === 'config');
+
+  const feats = document.getElementById('sidebar-features');
+  feats.innerHTML = S.features.map(f => `
+    <div class="sidebar-feat${S.feature === f.name ? ' active' : ''}" data-feature="${f.name}" data-action="open-feature">
+      ${f.name}
+    </div>`).join('');
+
+  const main = document.getElementById('main');
+
+  if (S.view === 'run') {
+    // Terminal view — don't rebuild DOM on re-renders, only set up once
+    if (!main.querySelector('.terminal-wrap')) {
+      main.innerHTML = terminalHTML();
+      startRun();
+    }
+    return;
+  }
+
+  const views = { dashboard, config, feature, report };
+  main.innerHTML = (views[S.view] || dashboard)();
+  bindEvents();
+}
+
+// ── Views ──────────────────────────────────────────────────────────────────────
+function dashboard() {
+  if (!S.features.length) return `
+    <div class="page">
+      <div class="page-header"><h1>Dashboard</h1></div>
+      <div class="empty">No requirements yet — add one using the sidebar.</div>
+    </div>`;
+
+  return `
+    <div class="page">
+      <div class="page-header"><h1>Dashboard</h1></div>
+      <div class="feature-grid">
+        ${S.features.map(f => `
+          <div class="feature-card" data-feature="${f.name}" data-action="open-feature">
+            <div class="feature-card-name">${f.name}</div>
+            ${f.lastStatus ? `
+              <div class="badges">
+                ${f.lastStatus.passes  ? `<span class="badge badge-pass">✅ ${f.lastStatus.passes}</span>` : ''}
+                ${f.lastStatus.fails   ? `<span class="badge badge-fail">❌ ${f.lastStatus.fails}</span>` : ''}
+                ${f.lastStatus.pending ? `<span class="badge badge-pending">⏳ ${f.lastStatus.pending}</span>` : ''}
+              </div>
+              <div class="feature-card-run">${f.latestRun}</div>
+            ` : `<div class="feature-card-empty">No runs yet</div>`}
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function config() {
+  return `
+    <div class="page">
+      <div class="page-header"><h1>App Config</h1></div>
+      <div class="editor-wrap">
+        <div class="editor-label">app-config.md</div>
+        <textarea class="code" id="config-editor" data-load="config"></textarea>
+        <div><button class="btn btn-primary" data-action="save-config">Save</button></div>
+      </div>
+    </div>`;
+}
+
+function feature() {
+  if (!S.featureData) return `<div class="page"><div class="empty">Loading…</div></div>`;
+  const { brd, testPlan, runs } = S.featureData;
+
+  return `
+    <div class="page">
+      <div class="page-header">
+        <button class="back-btn" data-action="go-dashboard">←</button>
+        <h1>${S.feature}</h1>
+      </div>
+
+      <div class="tabs">
+        <button class="tab${S.tab==='brd'  ? ' active':''}" data-tab="brd">BRD</button>
+        <button class="tab${S.tab==='plan' ? ' active':''}" data-tab="plan">Test Plan</button>
+        <button class="tab${S.tab==='runs' ? ' active':''}" data-tab="runs">Runs ${runs.length ? `(${runs.length})`:''}</button>
+      </div>
+
+      ${S.tab === 'brd' ? `
+        <div class="editor-wrap">
+          <div class="editor-label">Business Requirements</div>
+          <textarea class="code" id="brd-editor">${escHtml(brd)}</textarea>
+          <div class="actions">
+            <button class="btn btn-secondary" data-action="save-brd">Save BRD</button>
+          </div>
+        </div>
+      ` : ''}
+
+      ${S.tab === 'plan' ? `
+        ${testPlan ? `
+          <div class="report-body">${marked(testPlan)}</div>
+          <div class="actions" style="margin-top:16px">
+            <button class="btn btn-primary" data-action="run-uat">▶ Run UAT</button>
+          </div>
+        ` : `
+          <div class="notice">
+            <strong>No test plan yet.</strong> Generate one from the BRD — review it, then run UAT.
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" data-action="gen-plan">Generate Test Plan</button>
+          </div>
+        `}
+      ` : ''}
+
+      ${S.tab === 'runs' ? `
+        ${runs.length ? `
+          <div class="runs-list">
+            ${runs.map(r => `
+              <div class="run-item" data-run="${escHtml(r.run)}" data-action="open-report">
+                <div>
+                  <div class="run-name">${r.run}</div>
+                  ${r.status ? `
+                    <div class="badges" style="margin-top:6px">
+                      ${r.status.passes  ? `<span class="badge badge-pass">✅ ${r.status.passes}</span>` : ''}
+                      ${r.status.fails   ? `<span class="badge badge-fail">❌ ${r.status.fails}</span>` : ''}
+                      ${r.status.pending ? `<span class="badge badge-pending">⏳ ${r.status.pending}</span>` : ''}
+                    </div>` : ''}
+                </div>
+                <span class="run-arrow">→</span>
+              </div>`).join('')}
+          </div>
+        ` : `<div class="empty">No runs yet.</div>`}
+      ` : ''}
+    </div>`;
+}
+
+function report() {
+  return `
+    <div class="page">
+      <div class="page-header">
+        <button class="back-btn" data-action="go-feature">←</button>
+        <h1>${S.run}</h1>
+      </div>
+      <div class="report-body">${S.reportHtml || ''}</div>
+    </div>`;
+}
+
+// ── Terminal ───────────────────────────────────────────────────────────────────
+function terminalHTML() {
+  const label = S.runAction === 'plan' ? 'Generating test plan' : 'Running UAT';
+  return `
+    <div class="terminal-wrap">
+      <div class="terminal-header">
+        <div class="terminal-title">${label}: <strong>${S.feature}</strong></div>
+        <div class="terminal-timer" id="timer">00:00</div>
+      </div>
+      <div class="terminal-body" id="terminal-body"></div>
+      <div class="terminal-footer">
+        <div id="term-status">
+          <span class="status-dot status-running"></span> Running…
+        </div>
+        <div id="term-actions"></div>
+      </div>
+    </div>`;
+}
+
+function startRun() {
+  const body   = document.getElementById('terminal-body');
+  const status = document.getElementById('term-status');
+  const actions= document.getElementById('term-actions');
+  const timer  = document.getElementById('timer');
+
+  S.timerStart = Date.now();
+  S.timerInterval = setInterval(() => {
+    const s = Math.floor((Date.now() - S.timerStart) / 1000);
+    timer.textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  }, 1000);
+
+  const es = new EventSource(`/api/run/${S.feature}?action=${S.runAction}`);
+
+  es.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'start') {
+      body.innerHTML += `<span class="cmd">${escHtml(msg.text)}</span>`;
+    } else if (msg.type === 'output') {
+      body.innerHTML += escHtml(msg.text);
+      body.scrollTop = body.scrollHeight;
+    } else if (msg.type === 'done') {
+      es.close();
+      clearInterval(S.timerInterval);
+      const ok = msg.text === 'success';
+      status.innerHTML = `<span class="status-dot ${ok ? 'status-success':'status-error'}"></span> ${ok ? 'Complete' : 'Failed'}`;
+
+      if (S.runAction === 'plan') {
+        actions.innerHTML = `<button class="btn btn-primary" id="view-feature-btn">View Test Plan →</button>`;
+        document.getElementById('view-feature-btn').onclick = () => go('feature', { tab: 'plan' });
+      } else {
+        actions.innerHTML = `<button class="btn btn-primary" id="view-report-btn">View Report →</button>`;
+        document.getElementById('view-report-btn').onclick = async () => {
+          const d = await api.get(`/api/features/${S.feature}`);
+          if (d.runs && d.runs[0]) go('report', { run: d.runs[0].run });
+          else go('feature', { tab: 'runs' });
+        };
+      }
+    }
+  };
+
+  es.onerror = () => {
+    es.close();
+    clearInterval(S.timerInterval);
+    status.innerHTML = `<span class="status-dot status-error"></span> Connection lost`;
+  };
+}
+
+// ── Event delegation ───────────────────────────────────────────────────────────
+function bindEvents() {
+  // Load async content after render
+  const cfgEditor = document.getElementById('config-editor');
+  if (cfgEditor) api.get('/api/config').then(d => { cfgEditor.value = d.content; });
+
+  document.getElementById('main').addEventListener('click', handleMain, { once: true });
+}
+
+function handleMain(e) {
+  const el = e.target.closest('[data-action],[data-tab],[data-feature],[data-run]');
+  if (!el) { document.getElementById('main').addEventListener('click', handleMain, { once: true }); return; }
+
+  const action  = el.dataset.action;
+  const tab     = el.dataset.tab;
+  const feature = el.dataset.feature;
+  const run     = el.dataset.run;
+
+  if (tab)    { S.tab = tab; go('feature'); return; }
+
+  if (action === 'open-feature') { go('feature', { feature, tab: 'brd' }); return; }
+  if (action === 'open-report')  { go('report',  { run }); return; }
+  if (action === 'go-dashboard') { go('dashboard'); return; }
+  if (action === 'go-feature')   { go('feature'); return; }
+
+  if (action === 'save-config') {
+    const content = document.getElementById('config-editor').value;
+    api.put('/api/config', { content }).then(() => flash('Saved'));
+  }
+
+  if (action === 'save-brd') {
+    const content = document.getElementById('brd-editor').value;
+    api.put(`/api/features/${S.feature}/brd`, { content }).then(() => flash('Saved'));
+  }
+
+  if (action === 'gen-plan') {
+    go('run', { runAction: 'plan', runStatus: 'running' });
+    return;
+  }
+
+  if (action === 'run-uat') {
+    go('run', { runAction: 'run', runStatus: 'running' });
+    return;
+  }
+
+  document.getElementById('main').addEventListener('click', handleMain, { once: true });
+}
+
+// Sidebar + global nav
+document.getElementById('nav-dashboard').addEventListener('click', () => go('dashboard'));
+document.getElementById('nav-config').addEventListener('click',    () => go('config'));
+document.getElementById('new-req-btn').addEventListener('click',   () => openModal());
+
+document.getElementById('sidebar-features').addEventListener('click', e => {
+  const el = e.target.closest('[data-feature]');
+  if (el) go('feature', { feature: el.dataset.feature, tab: 'brd' });
+});
+
+// Modal
+function openModal() {
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-brd').value  = '';
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('new-name').focus();
+}
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+document.getElementById('modal-close').addEventListener('click',  closeModal);
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+document.getElementById('modal-create').addEventListener('click', async () => {
+  const name = document.getElementById('new-name').value.trim();
+  const brd  = document.getElementById('new-brd').value.trim();
+  if (!name) { document.getElementById('new-name').focus(); return; }
+  const res = await api.post('/api/features', { name, brd });
+  if (res.error) { alert(res.error); return; }
+  closeModal();
+  go('feature', { feature: name, tab: 'brd' });
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function marked(md) {
+  // Minimal inline markdown → HTML (server renders reports properly; this is for test plans)
+  return md
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,  '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,   '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.+?)`/g,       '<code>$1</code>')
+    .replace(/\n\n/g,          '</p><p>')
+    .replace(/^/,              '<p>').replace(/$/, '</p>');
+}
+
+function flash(msg) {
+  const el = Object.assign(document.createElement('div'), {
+    textContent: msg,
+    style: `position:fixed;bottom:24px;right:24px;background:var(--accent);color:#fff;
+            padding:8px 16px;border-radius:8px;font-size:13px;z-index:999;
+            animation:fadeout 1.8s forwards`,
+  });
+  document.head.insertAdjacentHTML('beforeend', '<style>@keyframes fadeout{0%{opacity:1}80%{opacity:1}100%{opacity:0}}</style>');
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1800);
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────────
+go('dashboard');
+</script>
+</body>
+</html>

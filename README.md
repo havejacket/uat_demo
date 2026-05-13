@@ -4,6 +4,26 @@ A lightweight approach to user acceptance testing using Claude as the tester and
 
 ---
 
+## How it works
+
+### Human-in-the-loop (interactive) mode
+
+Claude runs inside your IDE. You review the test plan before any testing starts, watch the report update live as each scenario completes, and can intervene at any point.
+
+![UAT workflow — Claude + Playwright MCP](UAT%20workflow.png)
+
+### CI/CD mode
+
+The same UAT loop runs automatically after every deploy to staging. Claude reads the BRD and approved test plan, drives the app via Playwright MCP, and either approves the release or captures evidence and files a defect for engineering.
+
+![UAT in the CI/CD loop](UAT%20with%20CICD.png)
+
+### Interactive workflow guide
+
+[`uat-workflow.html`](uat-workflow.html) is a standalone HTML page that walks through the full testing workflow step by step. Open it in a browser — no server needed.
+
+---
+
 ## What this is (and isn't)
 
 **Is:** Exploratory validation by an AI tester against a live environment. Fast to set up, requires no code, and produces human-readable reports.
@@ -69,6 +89,9 @@ requirements/
         tc-01-*.png ← screenshot evidence, one per scenario
 app-config.md       ← URL, credentials, login flow (human-maintained)
 app-memory.md       ← accumulated knowledge about the app (Claude-maintained)
+uat-workflow.html   ← standalone interactive workflow guide (open in browser)
+ui/                 ← optional local web UI — simple CRUD over the repo config files
+                       (app-config.md, BRDs, test plans); run with `npm start` inside ui/
 ```
 
 ---
